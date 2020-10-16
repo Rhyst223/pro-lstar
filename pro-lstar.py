@@ -4,6 +4,7 @@ import requests
 import urllib.request
 import io
 import numpy as np
+from itertools import groupby, count
 
 grid_lats = np.array([50.77, 54.74, 57.69, 60.0, 61.87, 63.43, 64.76, 65.91, 66.91, 67.79, 68.58, 69.3, \
              69.94, 70.53, 71.07, 71.57])
