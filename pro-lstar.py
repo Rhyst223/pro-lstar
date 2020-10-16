@@ -143,3 +143,63 @@ class CustomData():
             
         self.data = df
         
+    def plot_custom_data(self):
+        '''
+        Function to plot variables over given period, including shading for MLT
+        '''
+        
+        def mlt_shade(ss,low,high,ubound=False,lbound=False):
+            '''
+            Function where to shade mlt area for GIVEN ss later shown.
+            Not a well put togetehr function just a fudge to work right now
+            '''
+            hval = high
+            lval = low
+            if ubound == False:
+                h = (np.ceil(ss['mlt'].iloc[high]) - ss['mlt'].iloc[high])/ \
+                 (ss['mlt'].iloc[high+1]- ss['mlt'].iloc[high])
+
+                hval = hval + h
+
+            if lbound == False:
+                l = (-np.floor(ss['mlt'].iloc[low]) + ss['mlt'].iloc[low])/ \
+                 (-ss['mlt'].iloc[low-1]+ ss['mlt'].iloc[low])
+                lval = lval - l
+
+            return lval, hval
+        
+        fig, ax = plt.subplots(len(self.variable),1,figsize=(10,5*len(self.variable)),sharex='all')
+        
+        styles = ['+','o','*','s','d','1','x','h'][:len(self.MFmodel)]
+        plot_vars = [[m + '_' + v if v!='' else m for m in self.MFmodel] for v in self.variable]
+        
+        [self.data[p].plot(ax=a,style=styles,legend=False) for p,a in zip(plot_vars,ax.flatten())]
+        
+        #Handle MLT shading in each of the axis, taking care in case of only one variable
+        night = [list(g) for k, g in groupby(np.where(~self.data['mlt'].between(6,18,inclusive=False))[0], \
+                  key=lambda i,j=count(): i-next(j))]
+        for x in night:
+            if x[0] == 0:
+                l,u = mlt_shade(self.data,x[0],x[len(x)-1],lbound=True)
+                [this_ax.axvspan(l,u,facecolor="gray",alpha=0.2) \
+                     for this_ax in ax]
+
+            elif x[len(x)-1] == (len(self.data)-1):
+                l,u = mlt_shade(self.data,x[0],x[len(x)-1],ubound=True)
+                [this_ax.axvspan(l,u,facecolor="gray",alpha=0.2) \
+                     for this_ax in ax]
+
+            else:
+                l,u = mlt_shade(self.data,x[0],x[len(x)-1])
+                [this_ax.axvspan(l,u,facecolor="gray",alpha=0.2) \
+             for this_ax in ax]
+                
+        [this_ax.set_ylabel(v) if v!='' else this_ax.set_ylabel('L*') for \
+         this_ax,v in zip(ax,self.variable)]
+        [this_ax.set_xlabel('') if v!='' else this_ax.set_ylabel('L*') for \
+         this_ax,v in zip(ax,self.variable)]
+        
+        ax[0].legend(bbox_to_anchor=(1, 1.1),ncol=len(self.MFmodel))
+        plt.xticks(rotation=90)
+        plt.show()
+        
