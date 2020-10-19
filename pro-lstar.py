@@ -2,9 +2,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import requests
 import urllib.request
-import io
+import io, gzip
 import numpy as np
 from itertools import groupby, count
+from scipy.interpolate import griddata
+import warnings
+#warnings.filterwarnings("ignore")
 
 grid_lats = np.array([50.77, 54.74, 57.69, 60.0, 61.87, 63.43, 64.76, 65.91, 66.91, 67.79, 68.58, 69.3, \
              69.94, 70.53, 71.07, 71.57])
@@ -36,9 +39,11 @@ class CustomData():
     _MFmodel_: (list) Magnetic field model to retrieve data for. Assumed all of them. If not one of\
                 ['IGRF','OPQUIET','OSTA','T89','T96','T01QUIET','T01STORM','T05']
     _variable_: Variable to read in. Assumed only L*. Possible are [l,lm,b,x,y,z]. Denote l by blank string
+    _model_threshold_: If probabilistic desired, require this to be the number of required models for L* output.
+                        Default is None (provide model outputs only). If given must be <= len(MFmodel)
     """
     
-    def __init__(self, start, end, mlat, mlon, MFmodel = 'all', variable = ['']):
+    def __init__(self, start, end, mlat, mlon, MFmodel = 'all', variable = [''],model_threshold=None):
         
         self.start = start #string
         self.end = end #string
@@ -46,6 +51,7 @@ class CustomData():
         self.mlon = mlon % 360 #float
         self.variable = variable
         self.MFmodel = MFmodel #list
+        self.model_threshold = model_threshold
         
         # check that given period is within data period
         assert ((start.year >2005) and (end.year <2017)),\
@@ -54,6 +60,10 @@ class CustomData():
         # check that given mlat is within range
         assert ((mlat >=50.77) and (mlat <=71.57)),\
         "Magnetic latitude must be between 50.77 and 71.57"
+        
+        if ((model_threshold is not None) and (MFmodel !='all')):
+            assert (model_threshold <= len(MFmodel)),\
+            "Model threshold must be less than or equal to the length of MFmodel"
         
         #Check that MFmodel code is allowed if not all
         if MFmodel is not 'all':
@@ -82,36 +92,57 @@ class CustomData():
             df.mlat = df.mlat.apply(lambda x: round(x,2))
             #df = df[(df.mlat == mlat) & (df.mlon == mlon)]
             
+            interp=''
             if (mlon not in grid_lons): 
                 print('Off grid longitude - Interpolation required')
-                mlon = find_nearest(grid_lons,mlon)
-                interp='lon'
+                mlon_slice = find_nearest(grid_lons,mlon)
+                interp+='lon'
             else:
-                mlon = [mlon]
+                mlon_slice = [mlon]
                 
             if (round(mlat,2) not in grid_lats): 
                 print('Off grid latitude - Interpolation required')
-                mlat = find_nearest(grid_lats,mlat)
+                mlat_slice = find_nearest(grid_lats,mlat)
                 interp+='lat'
             else:
-                mlat = [mlat]
+                mlat_slice = [mlat]
     
-            df = df[(df.mlat.isin(mlat)) & (df.mlon.isin(mlon))] 
+            df = df[(df.mlat.isin(mlat_slice)) & (df.mlon.isin(mlon_slice))] 
         
-            if interp in locals():
-                interpolate_custom_data(df,interp)
+            if interp !='':
+                interp_df = pd.concat([tdf.apply(interpolate_custom_data,axis=0,\
+                                                 args=(np.array([[a,b] for a,b in zip(tdf.mlon,tdf.mlat)]),66,4)) \
+                                       for time,tdf in df.groupby('0')],axis=1).T
+                interp_df.index = df.index.unique()
+                #interp_df['mlat'] = [mlat]*len(interp_df)
+                #interp_df['mlon'] = [mlon]*len(interp_df)
+                return interp_df
             else: 
                 return df
         
-        def interpolate_custom_data(df,method):
+        def interpolate_custom_data(series,coords,mlat,mlon):
             '''
-            Function to interpolate custom period data if location is off Pro-L* grid
-            Inputs:
-                method  - lon: longitudinal interpolation only
-                        - lat: latitudinal interpolation only
-                        - lonlat: full-grid interpolation
+            Function to interpolate custom period variables if location is off Pro-L* grid
             '''
-            
+            if ((series.name=='mlt') and (series[:2].is_monotonic_increasing==False)):
+                series[1]+=24
+                series[-1]+=24
+                    
+            if pd.isnull(series).any()==True:
+                warnings.warn('Interpolation not possible for '+series.name+' at time '+str(series.index.unique()[0])+' due to undefined L*(s)'+\
+                      ' at neighbouring points in Pro-L* domain')
+                return np.nan
+            else:
+                xnew = np.array([coords[:,0][0],mlon,coords[:,0][1]])
+                if (xnew[-1] == 0):
+                    xnew[-1]+=360
+                ynew = np.array([min(coords[:,1]),mlat,max(coords[:,1])])
+                znew = griddata(coords, series, (xnew[None,:], ynew[:,None]), method='linear')
+                
+                if series.name == 'mlt':
+                    return znew[1][1] % 24
+                else:
+                    return znew[1][1]
             
         urls = ['https://researchdata.reading.ac.uk/222/9/2006.csv.gz',
                 'https://researchdata.reading.ac.uk/222/11/2007.csv.gz',
@@ -176,6 +207,11 @@ class CustomData():
         
         [self.data[p].plot(ax=a,style=styles,legend=False) for p,a in zip(plot_vars,ax.flatten())]
         
+        if self.model_threshold is not None:
+            [self.data[p].dropna(thresh=self.model_threshold).median(axis=1)\
+             .plot(ax=a,color='black',legend=False,label='Probabilistic') for p,a in zip(plot_vars,ax.flatten())]
+            
+        
         #Handle MLT shading in each of the axis, taking care in case of only one variable
         night = [list(g) for k, g in groupby(np.where(~self.data['mlt'].between(6,18,inclusive=False))[0], \
                   key=lambda i,j=count(): i-next(j))]
@@ -200,7 +236,11 @@ class CustomData():
         [this_ax.set_xlabel('') if v!='' else this_ax.set_ylabel('L*') for \
          this_ax,v in zip(ax,self.variable)]
         
-        ax[0].legend(bbox_to_anchor=(1, 1.1),ncol=len(self.MFmodel))
+        #ax[0].legend(bbox_to_anchor=(1, 1.1),ncol=len(self.MFmodel))
+        ax[0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.1),
+          ncol=len(self.MFmodel), fancybox=True, shadow=True)
         plt.xticks(rotation=90)
         plt.show()
+        
+ 
         
