@@ -37,4 +37,4 @@ The next planned developments are:
   - Query L* statistics (mean, median, interquartile range, occurrence) for a given location over a specific time period
   - Variable parameterisations based on solar wind variables and geomagnetic indices
   
-For all correspondence please contact r.l.thompson@pgr.reading.ac.uk (including any feature requests or collaboration).
+For all correspondence please contact r.l.thompson@pgr.reading.ac.uk (including any questions, feature or collaboration requests, and bugs).
