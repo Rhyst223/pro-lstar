@@ -239,15 +239,20 @@ class get_period():
         
         fig, ax = plt.subplots(len(self.variable),1,figsize=(12,8),sharex='all')
         
+        if len(self.variable)==1:
+            ax = [ax]
+        
         styles = ['+','o','*','s','d','1','x','h'][:len(self.MFmodel)]
         plot_vars = [[m + '_' + v if v!='' else m for m in self.MFmodel] for v in self.variable]
         
-        [self.data[p].plot(ax=a,style=styles,legend=False) for p,a in zip(plot_vars,ax.flatten())]
+        #[self.data[p].plot(ax=a,style=styles,legend=False) for p,a in zip(plot_vars,ax.flatten())]
+        [self.data[p].plot(ax=a,style=styles,legend=False) for p,a in zip(plot_vars,ax)]
         
         if self.model_threshold is not None:
+            #[self.data[p].dropna(thresh=self.model_threshold).median(axis=1)\
+             #.plot(ax=a,color='black',legend=False,label='Probabilistic') for p,a in zip(plot_vars,ax.flatten())]
             [self.data[p].dropna(thresh=self.model_threshold).median(axis=1)\
-             .plot(ax=a,color='black',legend=False,label='Probabilistic') for p,a in zip(plot_vars,ax.flatten())]
-            
+             .plot(ax=a,color='black',legend=False,label='Probabilistic') for p,a in zip(plot_vars,ax)]
         
         #Handle MLT shading in each of the axis, taking care in case of only one variable
         night = [list(g) for k, g in groupby(np.where(~self.data['mlt'].between(6,18,inclusive=False))[0], \
