@@ -118,7 +118,7 @@ class get_period():
         if self.start.year != self.end.year:
             print('Period covers multiple years - expect longer read in time')
             url = [u for u in urls if u[-11:-7] in \
-                   list(pd.date_range(self.start.year,self.end.year).year.unique())]
+                   list(pd.date_range(self.start,self.end).year.unique().astype(str))]
             
             df = pd.concat([read_yearly_data(u,self.start,self.end,cols) for u in url])
         else:
