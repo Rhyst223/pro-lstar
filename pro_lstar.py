@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-#import requests
 import urllib.request
 import io, gzip
 import numpy as np
@@ -9,9 +8,18 @@ from scipy.interpolate import griddata
 import warnings
 from copy import deepcopy
 
+#from config import load_config
+
+import config
+
 grid_lats = np.array([50.77, 54.74, 57.69, 60.0, 61.87, 63.43, 64.76, 65.91, 66.91, 67.79, 68.58, 69.3, \
              69.94, 70.53, 71.07, 71.57])
 grid_lons = np.arange(0,360,15)
+
+# get local directory from configuration file
+config_set = config.load_config()
+local_dir = config_set['data_dir']
+
 
 class MissingDataWarning(UserWarning):
     pass

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import configparser
 import os
-import pro_lstar
-
 from pathlib import Path
 
 """
@@ -34,13 +32,10 @@ def get_config_file():
     home_dir = Path.home()
     config_file_1 = home_dir / 'pro-lstar' / config_filename
 
-    module_dir = Path(pro_lstar.__file__)
-    config_file_2 = module_dir / '..' / config_filename
+    module_dir = Path(os.path.dirname(__file__))
+    config_file_2 = module_dir / config_filename
     config_file_2 = config_file_2.resolve()
-
-    print(type(module_dir))
-    print(type(config_file_1))
-    print(type(config_file_2))
+    
 
     for f in [config_file_1, config_file_2]:
         if f.is_file():
@@ -57,6 +52,7 @@ def load_config():
     """
     
     config_path = get_config_file()
+    
     configf = configparser.ConfigParser()
     configf.read(config_path)
     
@@ -73,4 +69,4 @@ def load_config():
     return config_dic
 
 a = get_config_file()
-b = load_config()
+bb = load_config()
