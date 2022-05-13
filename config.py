@@ -67,6 +67,3 @@ def load_config():
 
     
     return config_dic
-
-a = get_config_file()
-bb = load_config()
