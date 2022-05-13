@@ -1,0 +1,12 @@
+;Example configuration file.
+;To activate the configuration file
+;move file to the pro-lstar directory
+;and rename to 'pro_lstar_rc'
+
+[DEFAULT]
+;The directory where data will loaded
+;and downloaded from
+;insert data directory below
+; e.g. 
+;data_dir = D:\data
+data_dir = 

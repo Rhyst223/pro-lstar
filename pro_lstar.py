@@ -1,17 +1,25 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import requests
 import urllib.request
-import io, gzip
+import io, gzip, os
 import numpy as np
 from itertools import groupby, count
 from scipy.interpolate import griddata
 import warnings
 from copy import deepcopy
 
+#from config import load_config
+
+import config
+
 grid_lats = np.array([50.77, 54.74, 57.69, 60.0, 61.87, 63.43, 64.76, 65.91, 66.91, 67.79, 68.58, 69.3, \
              69.94, 70.53, 71.07, 71.57])
 grid_lons = np.arange(0,360,15)
+
+# get local directory from configuration file
+config_set = config.load_config()
+local_dir = config_set['data_dir']
+
 
 class MissingDataWarning(UserWarning):
     pass
@@ -45,15 +53,17 @@ class get_period():
     _variable_: Variable to read in. Assumed only L*. Possible are [l,lm,b,x,y,z]. Denote l by blank string
     _model_threshold_: If probabilistic desired, require this to be the number of required models for L* output.
                         Default is None (provide model outputs only). If given must be <= len(MFmodel)
+    _local_: load data locally rather then online
     """
     
-    def __init__(self, start, end, MFmodel = 'all', variable = [''],model_threshold=None):
+    def __init__(self, start, end, MFmodel = 'all', variable = [''],model_threshold=None,local=True):
         
         self.start = start #string
         self.end = end #string
         self.variable = variable
         self.MFmodel = MFmodel #list
         self.model_threshold = model_threshold
+        self.local = local
         
         # check that given period is within data period
         assert ((start.year >2005) and (end.year <2017)),\
@@ -64,7 +74,7 @@ class get_period():
             "Model threshold must be less than or equal to the length of MFmodel"
         
         #Check that MFmodel code is allowed if not all
-        if MFmodel is not 'all':
+        if MFmodel != 'all':
             assert all(m in ['IGRF','OPQUIET','OSTA','T89','T96','T01QUIET','T01STORM','T05'] for m in MFmodel),\
             "MFmodels must be in ['IGRF','OPQUIET','OSTA','T89','T96','T01QUIET','T01STORM','T05'] or all"
         
@@ -83,14 +93,23 @@ class get_period():
         a pandas dataframe.
         """
         
-        def read_yearly_data(f,sdate,edate,cols):
+        def read_yearly_data(f,sdate,edate,cols,local):
             '''
             Function to read yearly L* files from data archive, and slice between start and
             end period
             '''
-            raw_data = urllib.request.urlopen(f).read()
-            data = gzip.decompress(raw_data)
-            df = pd.read_csv(io.BytesIO(data),index_col=0,usecols=cols)  
+            if not local:
+                print('Reading files from internet - slower')
+                raw_data = urllib.request.urlopen(f).read()
+                data = gzip.decompress(raw_data)
+                df = pd.read_csv(io.BytesIO(data),index_col=0,usecols=cols) 
+            else:
+                print('Reading local files - faster')
+                f_base = os.path.basename(f)
+                f_read = os.path.join(local_dir,f_base)
+                df = pd.read_csv(f_read,compression='gzip',\
+                              usecols=cols,index_col=0)
+            
             df = df.loc[str(sdate):str(edate)]
             df.mlat = df.mlat.apply(lambda x: round(x,2))
             
@@ -120,11 +139,11 @@ class get_period():
             url = [u for u in urls if u[-11:-7] in \
                    list(pd.date_range(self.start,self.end).year.unique().astype(str))]
             
-            df = pd.concat([read_yearly_data(u,self.start,self.end,cols) for u in url])
+            df = pd.concat([read_yearly_data(u,self.start,self.end,cols,self.local) for u in url])
         else:
             url = [u for u in urls if u[-11:-7]==str(self.start.year)]
             
-            df = read_yearly_data(url[0],self.start,self.end,cols)
+            df = read_yearly_data(url[0],self.start,self.end,cols,self.local)
             
         self.period_data = df
         
@@ -288,8 +307,4 @@ class get_period():
               ncol=len(self.MFmodel), fancybox=True, shadow=True)
         plt.xticks(rotation=90)
         plt.show()
-        
- 
-        
- 
         
