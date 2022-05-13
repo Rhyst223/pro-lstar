@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import requests
+#import requests
 import urllib.request
 import io, gzip
 import numpy as np
@@ -64,7 +64,7 @@ class get_period():
             "Model threshold must be less than or equal to the length of MFmodel"
         
         #Check that MFmodel code is allowed if not all
-        if MFmodel is not 'all':
+        if MFmodel != 'all':
             assert all(m in ['IGRF','OPQUIET','OSTA','T89','T96','T01QUIET','T01STORM','T05'] for m in MFmodel),\
             "MFmodels must be in ['IGRF','OPQUIET','OSTA','T89','T96','T01QUIET','T01STORM','T05'] or all"
         
@@ -292,4 +292,6 @@ class get_period():
  
         
  
-        
+#start = pd.to_datetime('2006-12-01')
+#end = pd.to_datetime('2006-12-02')        
+#df = get_period(start, end, MFmodel = 'all', variable = ['','lm','b','x','y','z'],model_threshold=4)

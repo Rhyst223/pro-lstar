@@ -25,7 +25,7 @@ In its current iteration, Pro-L* allows users to:
 
 ```python
 import pandas as pd
-from pro-lstar import *
+from pro_lstar import *
 
 # start, end - datetime type object
 start = pd.to_datetime('2006-12-01')
