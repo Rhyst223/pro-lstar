@@ -127,3 +127,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+pro_lstar_rc
