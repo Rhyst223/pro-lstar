@@ -41,7 +41,7 @@ location.plot_location_data()
 
 The above assumes that the data set has been downloaded and is available locally. If the dataset has not be downloaded set ```local=False``` in the function call ```get_period```. Note loading the data locally is signifcantly faster then loading it from the internet. 
 
-To setup local loading of files create a configuration file ```pro_lstar_rc``` and add fill in the ```data_dir``` line with the local directory where the data set has been downloaded. See below on the details of the dataset.
+To setup local loading of files create a configuration file ```pro_lstar_rc``` and add fill in the ```data_dir``` line with the local directory where the data set has been downloaded. See below on the details of the dataset. An example file can be copy and pasted from ```pro_lstar_rc_example```.
 
 ## The Dataset
 
