@@ -21,11 +21,11 @@ Thompson, Rhys and Morley, Steven (2020): Pro-L*: probabilistic hourly L* values
 In its current iteration, Pro-L* allows users to:
   - Read in and plot Pro-L* variables for any given ground locations over a specific period (within ~2.5-10L in the Northern Hemisphere and the time frame given in the above dataset - refer for more details) for 7 magnetic field models, or simple probabilistic combinations of them. 
   
-## The model is simple to implement, with example code as follows:
+ The model is simple to implement, with example code as follows:
 
 ```python
 import pandas as pd
-from pro_lstar import *
+from prolstar import *
 
 # start, end - datetime type object
 start = pd.to_datetime('2006-12-01')
@@ -39,9 +39,13 @@ location  = df.get_location(66,4)
 location.plot_location_data()
 ```
 
+The above assumes that the data set has been downloaded and is available locally. If the dataset has not be downloaded set ```local=False``` in the function call ```get_period```. Note loading the data locally is signifcantly faster then loading it from the internet. 
+
+To setup local loading of files create a configuration file ```pro_lstar_rc``` and add fill in the ```data_dir``` line with the local directory where the data set has been downloaded. See below on the details of the dataset.
+
 ## The Dataset
 
-Full details of the Dataset can be found [here](https://researchdata.reading.ac.uk/222/21/ReadMe.docx). Data are stored in compressed csv files stored online. A brief summary is below:
+Full details of the Dataset can be found [here](https://researchdata.reading.ac.uk/222/21/ReadMe.docx). Data are stored in compressed csv files stored online. A brief summary is below.
 
 The global magnetic field models in the dataset (also including the internal field from the International Geomagnetic Reference Field (IGRF)), in the order in which they appear for each variable, are coded as follows:
 
