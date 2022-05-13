@@ -308,13 +308,3 @@ class get_period():
         plt.xticks(rotation=90)
         plt.show()
         
- 
-        
- 
-start = pd.to_datetime('2006-12-01')
-end = pd.to_datetime('2006-12-02')        
-df_local = get_period(start, end, MFmodel = ['T05'])
-ps_local = df_local.get_location(66,4)
-
-df = get_period(start, end, MFmodel = ['T05'], local=False)
-ps = df.get_location(66,4)
